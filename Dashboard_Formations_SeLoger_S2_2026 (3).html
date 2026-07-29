@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporting Formations — SeLoger / Aviv Group</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --red: #E2001A;
+    --red-dark: #B80015;
+    --red-light: #FDF0F1;
+    --red-mid: #FAD0D4;
+    --black: #111111;
+    --gray-dark: #3D3D3D;
+    --gray-mid: #767676;
+    --gray-light: #B8B8B8;
+    --gray-bg: #F5F5F5;
+    --white: #FFFFFF;
+    --border: #E8E8E8;
+    --green: #1A8C5A;
+    --green-light: #E6F5EE;
+    --amber: #B06000;
+    --amber-light: #FDF3E0;
+    --radius: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--gray-bg);
+    color: var(--black);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--white);
+    border-bottom: 3px solid var(--red);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  }
+  .logo { display: flex; align-items: center; gap: 16px; }
+  .logo-wordmark { display: flex; align-items: baseline; line-height: 1; }
+  .logo-sep { width: 1px; height: 24px; background: var(--border); margin: 0 2px; }
+  .logo-title { font-size: 15px; font-weight: 700; color: var(--black); letter-spacing: -0.2px; white-space: nowrap; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .hdr-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23767676' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 28px 6px 11px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--black);
+    cursor: pointer;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .hdr-select:hover { border-color: var(--gray-mid); }
+  .hdr-btn-outline {
+    background: var(--white);
+    border: 1.5px solid var(--black);
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--black);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .hdr-btn-outline:hover { background: var(--gray-bg); }
+  .hdr-btn-red {
+    background: var(--red);
+    border: none;
+    border-radius: 4px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .hdr-btn-red:hover { background: var(--red-dark); }
+
+  /* ── TABS ── */
+  .tabs {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex;
+    gap: 0;
+  }
+  .tab {
+    padding: 14px 22px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-mid);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .tab:hover { color: var(--black); }
+  .tab.active { color: var(--red); border-bottom-color: var(--red); font-weight: 600; }
+  .tab-pill {
+    font-size: 11px;
+    background: var(--gray-bg);
+    color: var(--gray-mid);
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 400;
+  }
+  .tab.active .tab-pill { background: var(--red-light); color: var(--red); }
+
+  /* ── MAIN ── */
+  .main { padding: 28px 40px; max-width: 1280px; }
+
+  /* ── SECTION ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .kpi {
+    background: var(--white);
+    padding: 20px 24px;
+    position: relative;
+  }
+  .kpi::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--red);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .kpi:hover::before { opacity: 1; }
+  .kpi-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gray-mid);
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--black);
+    line-height: 1;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .kpi-value .unit { font-size: 18px; font-weight: 400; color: var(--gray-mid); letter-spacing: 0; }
+  .kpi-sub { font-size: 11px; color: var(--gray-light); }
+  .kpi-accent .kpi-value { color: var(--red); }
+
+  /* ── CHARTS ROW ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .charts-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--gray-mid);
+  }
+  .card-body { padding: 0 20px 18px; }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--gray-mid); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .table-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--white);
+  }
+  .table-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--gray-mid);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .table-title::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 14px;
+    background: var(--red);
+    border-radius: 2px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    padding: 9px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gray-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--gray-bg);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #FAFAFA; }
+  tbody td { padding: 11px 14px; vertical-align: middle; }
+  .td-muted { color: var(--gray-mid); font-size: 12px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    gap: 3px;
+  }
+  .b-done    { background: var(--green-light); color: #116644; }
+  .b-todo    { background: var(--gray-bg); color: var(--gray-mid); border: 1px solid var(--border); }
+  .b-warn    { background: var(--amber-light); color: var(--amber); }
+  .b-red     { background: var(--red-light); color: var(--red); }
+  .b-period  { background: var(--red); color: white; }
+  .b-s2      { background: var(--black); color: white; }
+
+  .bu-r { background: #E8F0FB; color: #1A4A9E; }
+  .bu-b { background: #F0EDF9; color: #4A3A9E; }
+  .bu-c { background: var(--green-light); color: #116644; }
+  .bu-k { background: var(--amber-light); color: var(--amber); }
+  .bu-t { background: #FDE8ED; color: #9E1A35; }
+
+  /* ── PARTICIPATION BAR ── */
+  .pbar-wrap { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+  .pbar { flex: 1; height: 5px; border-radius: 3px; background: var(--gray-bg); overflow: hidden; }
+  .pbar-fill { height: 100%; border-radius: 3px; }
+  .pbar-fill.good { background: var(--red); }
+  .pbar-fill.warn { background: #F5A623; }
+  .pbar-val { font-size: 12px; font-weight: 600; min-width: 36px; text-align: right; }
+
+  /* ── NPS COLOR ── */
+  .nps-hi { color: var(--green); font-weight: 700; }
+  .nps-md { color: var(--amber); font-weight: 700; }
+  .nps-lo { color: var(--red);   font-weight: 700; }
+
+  /* ── INSIGHT CARDS ── */
+  .insights-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px; }
+  .insight {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    border-top: 3px solid var(--red);
+    box-shadow: var(--shadow);
+  }
+  .insight h4 { font-size: 13px; font-weight: 700; margin-bottom: 5px; color: var(--black); }
+  .insight p  { font-size: 12px; color: var(--gray-mid); line-height: 1.55; }
+
+  /* ── PIPELINE ROWS ── */
+  .tr-planned { background: #FAFAFA; }
+  .tr-planned td { color: var(--gray-mid); font-style: italic; font-size: 12px; }
+
+  @media(max-width:900px){
+    .kpi-strip { grid-template-columns: 1fr 1fr; }
+    .charts-row,.charts-row-3,.insights-row { grid-template-columns:1fr; }
+    .main { padding:16px 16px; }
+    .header { padding:0 16px; }
+    .tabs { padding:0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-wordmark">
+      <span style="color:var(--red);font-weight:800;font-style:italic;font-size:22px;letter-spacing:-0.5px">Se</span><span style="color:var(--black);font-weight:800;font-style:italic;font-size:22px;letter-spacing:-0.5px">Loger</span><span style="color:var(--red);font-size:10px;vertical-align:super;font-style:normal;font-weight:700;margin-left:1px">■</span>
+    </div>
+    <div class="logo-sep"></div>
+    <div class="logo-title">Reporting Formation 2026</div>
+  </div>
+  <div class="header-right">
+    <select class="hdr-select"><option>Toutes les BU</option><option>RESIDENTIAL</option><option>BUSINESS</option><option>CUCA</option><option>KA</option><option>TRANSAC</option></select>
+    <select class="hdr-select"><option>Tous les mois</option><option>Janvier</option><option>Février</option><option>Mars</option><option>Juillet</option></select>
+    <select class="hdr-select"><option>Tous les formateurs</option><option>Nico</option><option>Pierre</option><option>Nico / Pierre</option><option>Externe</option></select>
+    <button class="hdr-btn-outline">Actualiser</button>
+    <button class="hdr-btn-red">Analyser avec IA →</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<nav class="tabs">
+  <div class="tab active" onclick="showTab('q1',this)">S1 2026 <span class="tab-pill">31 formations</span></div>
+  <div class="tab" onclick="showTab('s2',this)">S2 2026 <span class="tab-pill">3 réalisées</span></div>
+  <div class="tab" onclick="showTab('global',this)">Vue globale <span class="tab-pill">34 au total</span></div>
+</nav>
+
+<main class="main">
+
+<!-- ════════════ Q1 ════════════ -->
+<div id="tab-q1" class="section active">
+
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-label">Formations réalisées</div>
+      <div class="kpi-value">31</div>
+      <div class="kpi-sub">S1 2026 complétées</div>
+    </div>
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">NPS moyen</div>
+      <div class="kpi-value">9.26<span class="unit"> /10</span></div>
+      <div class="kpi-sub">11 formations évaluées</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Participation moyenne</div>
+      <div class="kpi-value">84<span class="unit">%</span></div>
+      <div class="kpi-sub">Moyenne pondérée réelle</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Volume total</div>
+      <div class="kpi-value">308.65<span class="unit"> h</span></div>
+      <div class="kpi-sub">Heures dispensées S1</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">NPS par formation</span>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#E2001A"></div>≥ 9.0</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#B8B8B8"></div>&lt; 9.0</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:210px">
+          <canvas id="q1Nps" role="img" aria-label="NPS par formation Q1 2026">NPS Q1</canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Participation & heures</span>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#E2001A"></div>Participation %</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#111111"></div>Heures</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:210px">
+          <canvas id="q1Part" role="img" aria-label="Participation et heures Q1 2026">Part. Q1</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Détail des formations S1 2026</span>
+      <span class="badge b-period">S1 2026</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>BU</th><th>Formation</th><th>Formateur</th>
+        <th>Inscrits</th><th>Présents</th><th>Participation</th>
+        <th>NPS (/10)</th><th>Sessions</th><th>Heures</th><th>Commentaires</th><th>Statut</th>
+      </tr></thead>
+      <tbody id="q1tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ════════════ S2 ════════════ -->
+<div id="tab-s2" class="section">
+
+  <div class="kpi-strip">
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Formations réalisées</div>
+      <div class="kpi-value">3</div>
+      <div class="kpi-sub">Calendrier S2 en cours</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">NPS moyen S2</div>
+      <div class="kpi-value">9.67<span class="unit"> /10</span></div>
+      <div class="kpi-sub">+0.51 pts vs Q1</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Participation</div>
+      <div class="kpi-value">100<span class="unit">%</span></div>
+      <div class="kpi-sub">3/3 formations à 100 %</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Volume réalisé</div>
+      <div class="kpi-value">49<span class="unit"> h</span></div>
+      <div class="kpi-sub">26 sessions à planifier</div>
+    </div>
+  </div>
+
+  <div class="insights-row">
+    <div class="insight">
+      <h4>🏆 Démarrage exceptionnel</h4>
+      <p>100 % de participation sur les 3 premières formations. NPS de 9.67 au-dessus de la moyenne Q1 (9.16).</p>
+    </div>
+    <div class="insight">
+      <h4>📋 Calendrier à compléter</h4>
+      <p>26 sessions planifiées sans thématique affectée. La priorisation des sujets et l'affectation des formateurs est le prochain chantier.</p>
+    </div>
+    <div class="insight">
+      <h4>🏢 Couverture BU cross-entité</h4>
+      <p>Residential, Business, CUCA, KA et Transac sont dans le pipeline — une couverture plus large qu'en Q1.</p>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Formations réalisées S2 2026</span>
+      <span class="badge b-done">3 complétées</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>BU</th><th>Thématique</th><th>Formateur</th>
+        <th>Inscrits</th><th>Présents</th><th>Participation</th>
+        <th>NPS</th><th>Sessions</th><th>H/session</th><th>Total</th><th>Commentaires</th>
+      </tr></thead>
+      <tbody id="s2tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Pipeline — sessions à planifier</span>
+      <span class="badge b-warn">26 à définir</span>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>BU</th><th>Formateur pressenti</th><th>Thématique</th><th>Statut</th></tr></thead>
+      <tbody id="pipelineTbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ════════════ GLOBAL ════════════ -->
+<div id="tab-global" class="section">
+
+  <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Total formations</div>
+      <div class="kpi-value">34</div>
+      <div class="kpi-sub">S1 (31) + S2 (3) réalisées</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">NPS global</div>
+      <div class="kpi-value">9.34<span class="unit"> /10</span></div>
+      <div class="kpi-sub">14 formations évaluées</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Volume cumulé</div>
+      <div class="kpi-value">357.65<span class="unit"> h</span></div>
+      <div class="kpi-sub">S1 (308.65h) + S2 (49h)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Participation globale</div>
+      <div class="kpi-value">87<span class="unit">%</span></div>
+      <div class="kpi-sub">Moyenne pondérée 2026</div>
+    </div>
+  </div>
+
+  <div class="charts-row-3">
+    <div class="card">
+      <div class="card-header"><span class="card-title">NPS — S1 vs S2</span></div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:190px">
+          <canvas id="gNps" role="img" aria-label="NPS comparatif Q1 vs S2">NPS comparatif</canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Volume horaire par période</span></div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:190px">
+          <canvas id="gHours" role="img" aria-label="Heures S1 vs S2">Heures comparatif</canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Répartition BU — S1 2026</span></div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:190px">
+          <canvas id="gBU" role="img" aria-label="Répartition BU S2">BU S2</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Synthèse toutes formations 2026</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Période</th><th>Formation</th><th>Formateur</th>
+        <th>Participation</th><th>NPS</th><th>Heures</th><th>Statut</th>
+      </tr></thead>
+      <tbody id="globalTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script>
+/* ─── DATA S1 2026 (31 formations) ─── */
+const Q1 = [
+  { date:'13.10-29.10', bu:'RESIDENTIAL', name:'Price Increase IDF',                            trainer:'Nico/Pierre',  ins:19, pres:16, part:84,  nps:9.33, sessions:7,  h:21,    comment:'' },
+  { date:'22.01-05.02', bu:'RESIDENTIAL', name:'Push ROF CQ',                                   trainer:'Nico/Pierre',  ins:35, pres:35, part:100, nps:9.40, sessions:5,  h:17.15, comment:'' },
+  { date:'04.02',       bu:'RESIDENTIAL', name:'Migration Ultimo ACQ Karim',                    trainer:'Nico',         ins:10, pres:8,  part:80,  nps:9.50, sessions:1,  h:1.5,   comment:'Absents : Karim et Faouzi' },
+  { date:'06.02',       bu:'CUCA',        name:'SF Cuca AE Laurent',                            trainer:'Nico/Pierre',  ins:9,  pres:9,  part:100, nps:null, sessions:1,  h:1,     comment:'Absent : Laurent (RDV médical)' },
+  { date:'09.02',       bu:'CUCA',        name:'SF Cuca AE Armelle',                            trainer:'Nico',         ins:7,  pres:6,  part:86,  nps:null, sessions:1,  h:0.5,   comment:'Absent : Valentin (session enregistrée)' },
+  { date:'10.02',       bu:'CUCA',        name:'SF Cuca AE Sarah',                              trainer:'Nico',         ins:7,  pres:5,  part:71,  nps:null, sessions:1,  h:0.5,   comment:'Absents : Druscilla, Daniel' },
+  { date:'10.02',       bu:'CUCA',        name:'SF Cuca AE Thomas',                             trainer:'Pierre',       ins:7,  pres:5,  part:71,  nps:null, sessions:1,  h:0.5,   comment:'' },
+  { date:'11.02',       bu:'CUCA',        name:'SF Cuca AE Imade',                              trainer:'Pierre',       ins:7,  pres:2,  part:29,  nps:null, sessions:1,  h:0.5,   comment:'' },
+  { date:'12.02',       bu:'CUCA',        name:'SF Cuca AE Nadji',                              trainer:'Pierre',       ins:7,  pres:6,  part:86,  nps:null, sessions:1,  h:0.5,   comment:'' },
+  { date:'13.02',       bu:'CUCA',        name:'SF Cuca AE Christopher',                        trainer:'Pierre',       ins:6,  pres:0,  part:0,   nps:null, sessions:1,  h:0.5,   comment:'' },
+  { date:'16.02',       bu:'CUCA',        name:'SF Cuca AE Olivier',                            trainer:'Nico',         ins:7,  pres:7,  part:100, nps:null, sessions:1,  h:0.5,   comment:'' },
+  { date:'12.02',       bu:'RESIDENTIAL', name:'Migration Ultimo AE testeurs',                  trainer:'Nico',         ins:6,  pres:6,  part:100, nps:null, sessions:1,  h:null,  comment:'' },
+  { date:'09.03',       bu:'RESIDENTIAL', name:'Intégration Gianni',                            trainer:'Nico/Pierre',  ins:1,  pres:1,  part:100, nps:10,   sessions:5,  h:35,    comment:'' },
+  { date:'10.03',       bu:'KA',          name:'Migration Ultimo GC',                           trainer:'Nico',         ins:10, pres:10, part:100, nps:null, sessions:1,  h:1,     comment:'Pas de QS — organisée par Thomas Sirgant' },
+  { date:'13.03',       bu:'RESIDENTIAL', name:'Migration Ultimo tous les AE',                  trainer:'Nico',         ins:60, pres:47, part:78,  nps:null, sessions:1,  h:2,     comment:'Pas de QS — organisée par Thomas Sirgant' },
+  { date:'07.04-17.04', bu:'RESIDENTIAL', name:'Inté Olivier + freelance ségo, ben, sarah',     trainer:'Nico/Pierre',  ins:4,  pres:4,  part:100, nps:9.00, sessions:5,  h:35,    comment:'QS uniquement pour Olivier' },
+  { date:'01.04',       bu:'KA',          name:'KA mobilité',                                   trainer:'Nico',         ins:4,  pres:4,  part:100, nps:8.00, sessions:2,  h:14,    comment:'Houria, Caroline, E.Pouliquen, Virginie L.' },
+  { date:'14.04-22.04', bu:'RESIDENTIAL', name:'Luxury Hybrides et pré-lancement Priority & TP',trainer:'Nico',         ins:13, pres:13, part:100, nps:8.75, sessions:5,  h:10,    comment:'' },
+  { date:'24.04',       bu:'BUSINESS',    name:'Training équipe neuf',                          trainer:'Pierre',       ins:13, pres:12, part:92,  nps:6.00, sessions:1,  h:3,     comment:'2 participantes en retard ont impacté le NPS' },
+  { date:'23.04',       bu:'TRANSAC',     name:'Accompagnement formation Transac chez Seven',   trainer:'Externe',      ins:38, pres:38, part:100, nps:null, sessions:2,  h:8,     comment:'' },
+  { date:'04.05',       bu:'RESIDENTIAL', name:'Formation Luxe (Priority & TP)',                trainer:'Pierre',       ins:20, pres:20, part:100, nps:null, sessions:2,  h:3,     comment:'' },
+  { date:'05.05',       bu:'RESIDENTIAL', name:'Inté Luxe Maxime Febvay',                       trainer:'Pierre',       ins:1,  pres:1,  part:100, nps:null, sessions:1,  h:3,     comment:'' },
+  { date:'12.05',       bu:'RESIDENTIAL', name:'Exploiter la preuve sociale par zone (acq.)',   trainer:'Pierre',       ins:5,  pres:5,  part:100, nps:null, sessions:1,  h:1,     comment:'Croiser carte client et prospect' },
+  { date:'18.05',       bu:'TRANSAC',     name:'Inté Transac mai 26',                           trainer:'Nico',         ins:4,  pres:4,  part:100, nps:9.75, sessions:9,  h:72,    comment:'' },
+  { date:'02.06',       bu:'RESIDENTIAL', name:'Inté B2B',                                      trainer:'Nico/Pierre',  ins:5,  pres:5,  part:100, nps:10,   sessions:10, h:80,    comment:'' },
+  { date:'15.06',       bu:'CUCA',        name:'Formation BPO',                                 trainer:'Pierre',       ins:12, pres:12, part:100, nps:9.50, sessions:4,  h:32,    comment:'' },
+  { date:'19.06',       bu:'RESIDENTIAL', name:'Luxury pour intégrants sales et managers',      trainer:'Nico',         ins:5,  pres:5,  part:100, nps:10,   sessions:1,  h:2.5,   comment:'' },
+  { date:'17.06',       bu:'RESIDENTIAL', name:'Managers Residential Modjo et supervision',     trainer:'Nico',         ins:2,  pres:2,  part:100, nps:null, sessions:1,  h:1,     comment:'' },
+  { date:'23.06',       bu:'BUSINESS',    name:'Réorg Construire partie 1',                     trainer:'Nico',         ins:4,  pres:null,part:null,nps:null, sessions:1,  h:3,     comment:'' },
+  { date:'29.06',       bu:'BUSINESS',    name:'Réorg Construire partie 2',                     trainer:'Nico',         ins:4,  pres:null,part:null,nps:null, sessions:1,  h:3,     comment:'' },
+  { date:'22.07',       bu:'BUSINESS',    name:'Top Position Neuf',                             trainer:'Pierre',       ins:21, pres:21, part:100, nps:9.60, sessions:1,  h:3,     comment:'' },
+];
+
+const S2 = [
+  { date:'29.06', bu:'RESIDENTIAL', name:'Intégration AE, Acquiz et CSM', trainer:'Nico / Pierre', ins:4, pres:4, part:100, nps:9.50, sessions:5, hSess:8, hTotal:40, comment:'Béryl, Abdel, Lydia, Lucas' },
+  { date:'15.07', bu:'RESIDENTIAL', name:'Intégration BA',                  trainer:'Pierre',       ins:1, pres:1, part:100, nps:10,   sessions:1, hSess:4, hTotal:4,  comment:'Benjamin Goergen' },
+  { date:'22-23.07', bu:'BUSINESS', name:'SLC et Bucom — réorg 3e et 4e parties', trainer:'Nico', ins:8, pres:8, part:100, nps:9.50, sessions:2, hSess:2.5, hTotal:5, comment:'—' },
+];
+
+const PIPELINE = [
+  ['BUSINESS','Nico/Pierre'],['CUCA','Nico'],['CUCA','Nico'],['CUCA','Pierre'],
+  ['CUCA','Pierre'],['CUCA','Pierre'],['CUCA','Pierre'],['CUCA','Nico'],
+  ['RESIDENTIAL','Nico'],['RESIDENTIAL','Nico/Pierre'],['KA','Nico'],['RESIDENTIAL','Nico'],
+  ['RESIDENTIAL','Nico/Pierre'],['KA','Nico'],['RESIDENTIAL','Nico'],['BUSINESS','Pierre'],
+  ['TRANSAC','Externe'],['RESIDENTIAL','Pierre'],['RESIDENTIAL','Pierre'],['RESIDENTIAL','Pierre'],
+  ['TRANSAC','Nico'],['RESIDENTIAL','Nico/Pierre'],['CUCA','Pierre'],['RESIDENTIAL','Nico'],
+  ['RESIDENTIAL','Nico'],['BUSINESS','Nico'],
+];
+
+/* ─── HELPERS ─── */
+function buBadge(bu) {
+  const map = { RESIDENTIAL:'bu-r', BUSINESS:'bu-b', CUCA:'bu-c', KA:'bu-k', TRANSAC:'bu-t' };
+  return `<span class="badge ${map[bu.trim()]||''}">${bu.trim()}</span>`;
+}
+function npsHtml(v) {
+  if(v===null) return '<span class="td-muted">—</span>';
+  const cls = v>=9?'nps-hi':v>=8.5?'nps-md':'nps-lo';
+  return `<span class="${cls}">${v.toFixed(2)}</span>`;
+}
+function pbarHtml(v) {
+  const color = v>=75?'var(--red)':'#B8B8B8';
+  const textColor = v>=75?'var(--black)':'#767676';
+  return `<div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${v}%;background:${color}"></div></div><span class="pbar-val" style="color:${textColor}">${v}%</span></div>`;
+}
+
+/* ─── FILL S1 TABLE ─── */
+const q1tbody = document.getElementById('q1tbody');
+Q1.forEach(r => {
+  const tr = document.createElement('tr');
+  const partCell = r.part !== null ? pbarHtml(r.part) : '<span class="td-muted">—</span>';
+  const presCell = r.pres !== null ? r.pres : '<span class="td-muted">—</span>';
+  tr.innerHTML = `
+    <td class="td-muted" style="white-space:nowrap">${r.date}</td>
+    <td>${buBadge(r.bu)}</td>
+    <td><strong>${r.name}</strong></td>
+    <td class="td-muted">${r.trainer}</td>
+    <td>${r.ins}</td>
+    <td>${presCell}</td>
+    <td>${partCell}</td>
+    <td>${npsHtml(r.nps)}</td>
+    <td>${r.sessions}</td>
+    <td>${r.h !== null ? r.h + 'h' : '<span class="td-muted">—</span>'}</td>
+    <td class="td-muted" style="font-size:12px;max-width:200px">${r.comment || '—'}</td>
+    <td><span class="badge b-done">✓ Fait</span></td>
+  `;
+  q1tbody.appendChild(tr);
+});
+
+/* ─── FILL S2 TABLE ─── */
+const s2tbody = document.getElementById('s2tbody');
+S2.forEach(r => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="td-muted">${r.date}</td>
+    <td>${buBadge(r.bu)}</td>
+    <td><strong>${r.name}</strong></td>
+    <td class="td-muted">${r.trainer}</td>
+    <td>${r.ins}</td>
+    <td>${r.pres}</td>
+    <td>${pbarHtml(r.part)}</td>
+    <td>${npsHtml(r.nps)}</td>
+    <td>${r.sessions}</td>
+    <td>${r.hSess}h</td>
+    <td><strong>${r.hTotal}h</strong></td>
+    <td class="td-muted" style="font-size:12px">${r.comment}</td>
+  `;
+  s2tbody.appendChild(tr);
+});
+
+/* ─── FILL PIPELINE ─── */
+const pipTbody = document.getElementById('pipelineTbody');
+PIPELINE.forEach((r, i) => {
+  const tr = document.createElement('tr');
+  tr.className = 'tr-planned';
+  tr.innerHTML = `
+    <td>${i+1}</td>
+    <td>${buBadge(r[0])}</td>
+    <td>${r[1]}</td>
+    <td><em style="color:var(--gray-light)">À définir</em></td>
+    <td><span class="badge b-todo">Planifié</span></td>
+  `;
+  pipTbody.appendChild(tr);
+});
+
+/* ─── FILL GLOBAL TABLE ─── */
+const globalTbody = document.getElementById('globalTbody');
+Q1.forEach(r => {
+  const tr = document.createElement('tr');
+  const partCell = r.part !== null ? pbarHtml(r.part) : '<span class="td-muted">—</span>';
+  tr.innerHTML = `
+    <td><span class="badge b-period">S1</span></td>
+    <td>${r.name}</td>
+    <td class="td-muted">${r.trainer}</td>
+    <td>${partCell}</td>
+    <td>${npsHtml(r.nps)}</td>
+    <td>${r.h !== null ? r.h + 'h' : '<span class="td-muted">—</span>'}</td>
+    <td><span class="badge b-done">✓ Fait</span></td>
+  `;
+  globalTbody.appendChild(tr);
+});
+S2.forEach(r => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><span class="badge b-s2">S2</span></td>
+    <td>${r.name}</td>
+    <td class="td-muted">${r.trainer}</td>
+    <td>${pbarHtml(r.part)}</td>
+    <td>${npsHtml(r.nps)}</td>
+    <td><strong>${r.hTotal}h</strong></td>
+    <td><span class="badge b-done">✓ Fait</span></td>
+  `;
+  globalTbody.appendChild(tr);
+});
+
+/* ─── TAB SWITCH ─── */
+function showTab(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+/* ─── CHARTS ─── */
+window.addEventListener('load', () => {
+  const RED   = '#E2001A';
+  const BLACK = '#111111';
+  const GRAY  = '#E8E8E8';
+  const GREEN = '#1A8C5A';
+  const AMBER = '#F5A623';
+  const gridColor = 'rgba(0,0,0,0.06)';
+  const tickFont  = { size: 11, family: '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif' };
+
+  // S1 NPS — formations avec NPS uniquement
+  const npsLabels = ['Price IDF','Push ROF','Migr.ACQ','Inté Gianni','Inté Olivier','KA mobilité','Luxury','Training neuf','Inté Transac','Inté B2B','BPO','Luxury intégrants','Top Position'];
+  const npsVals   = [9.33, 9.40, 9.50, 10, 9.00, 8.00, 8.75, 6.00, 9.75, 10, 9.50, 10, 9.60];
+  new Chart(document.getElementById('q1Nps'), {
+    type: 'bar',
+    data: {
+      labels: npsLabels,
+      datasets: [{
+        data: npsVals,
+        backgroundColor: npsVals.map(v => v>=9 ? RED : '#B8B8B8'),
+        borderRadius: 4, borderSkipped: false
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=>' NPS : '+c.parsed.y.toFixed(2) } } },
+      scales:{
+        x:{ ticks:{font:tickFont, autoSkip:false, maxRotation:45}, grid:{display:false} },
+        y:{ min:5, max:10.3, ticks:{font:tickFont, stepSize:1}, grid:{color:gridColor} }
+      }
+    }
+  });
+
+  // S1 Participation par BU (formations avec données)
+  const partLabels = ['Residential','CUCA','KA','Business','Transac'];
+  const partVals   = [92, 74, 100, 97, 100]; // moyennes pondérées par BU
+  new Chart(document.getElementById('q1Part'), {
+    type:'bar',
+    data:{
+      labels: partLabels,
+      datasets:[
+        { label:'Participation %', data: partVals, backgroundColor:partVals.map(v=>v>=75?RED:'#B8B8B8'), borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>' '+c.parsed.y+'%' } } },
+      scales:{
+        x:{ ticks:{font:tickFont}, grid:{display:false} },
+        y:{ min:0, max:110, ticks:{font:tickFont, callback:v=>v+'%'}, grid:{color:gridColor} }
+      }
+    }
+  });
+
+  // Global NPS S1 vs S2
+  new Chart(document.getElementById('gNps'), {
+    type:'bar',
+    data:{
+      labels:['S1 2026','S2 2026'],
+      datasets:[{ data:[9.26,9.67], backgroundColor:[RED,BLACK], borderRadius:6, borderSkipped:false }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>' NPS : '+c.parsed.y.toFixed(2) } } },
+      scales:{
+        x:{ ticks:{font:{size:13}}, grid:{display:false} },
+        y:{ min:8.5, max:10.2, ticks:{font:tickFont}, grid:{color:gridColor} }
+      }
+    }
+  });
+
+  // Global heures S1 vs S2
+  new Chart(document.getElementById('gHours'), {
+    type:'bar',
+    data:{
+      labels:['S1 2026','S2 2026'],
+      datasets:[{ data:[308.65,49], backgroundColor:[RED,BLACK], borderRadius:6, borderSkipped:false }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>' '+c.parsed.y+'h' } } },
+      scales:{
+        x:{ ticks:{font:{size:13}}, grid:{display:false} },
+        y:{ ticks:{font:tickFont, callback:v=>v+'h'}, grid:{color:gridColor} }
+      }
+    }
+  });
+
+  // BU donut S1 réel (nb formations par BU)
+  new Chart(document.getElementById('gBU'), {
+    type:'doughnut',
+    data:{
+      labels:['Residential (17)','CUCA (8)','Business (5)','Transac (2)','KA (2)'],
+      datasets:[{
+        data:[17,8,5,2,2],
+        backgroundColor:['#E2001A','#B8B8B8','#111111','#F5A623','#767676'],
+        hoverOffset:4, borderWidth:2, borderColor:'#ffffff'
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'right', labels:{ font:{size:11}, boxWidth:10, padding:8 } }
+      }
+    }
+  });
+
+});
+</script>
+</body>
+</html>
